@@ -17,43 +17,87 @@
 ; the provide "exports" these functions
 
 ; 00.
-(define (all? p? xs) void)
 
-; 01.
-(define (any? p? xs) void)
+(define (cols xss)
+  (apply map list xss))
 
-; 02.
-(define (concat xss) void)
+(define (all? p? l)
+  (if (null? l) #t
+      (and (p? (car l)) (all? p? (cdr l)))))
 
-; 03.
-(define (rows xss) void)
 
-; 04.
-(define (cols xss) void)
+(define (any? p? l)
+  (if (null? l) #f
+      (or (p? (car l)) (any? p? (cdr l)))))
 
-; 05.
-(define (matrix-ref xss i j) void)
 
-; 06.
-(define (set xs i x) void)
+(define (concat ll)
+  (if (null? ll) '()
+      (append (car ll) (concat (cdr ll)))))
 
-; 07.
-(define (place xss i j x) void)
+(define (rows matrix) matrix)
 
-; 08.
-(define (diag xss) void)
+(define (matrix-ref matrix row col)
+  (if (= row 0) (list-ref (car matrix) col)
+      (matrix-ref (cdr matrix) (- row 1) col)))
 
-; 09.
-(define (diags xss) void)
+(define (set xs i x)
+  (if (and (null? xs) (= i 0))
+      (list x)
+      (if (= i 0)
+          (cons x (cdr xs))
+          (cons (car xs) (set (cdr xs) (- i 1) x)))))
 
-; 10.
-(define (map-matrix f xss) void)
+(define (place xss i j x)
+  (if (= i 0)
+      (append (list (set (car xss) j x)) (cdr xss))
+      (append (list (car xss)) (place (cdr xss) (- i 1) j x))))
 
-; 11.
-(define (filter-matrix p? xss) void)
+(place '((1 2 3)
+         (4 5 6)
+         (7 8 9)) 1 1 42)
 
-; 12.
-(define (zip-with f xs ys) void)
+(define (drop xs n)
+  (if (= n 0) xs
+      (drop (cdr xs) (- n 1))))
 
-; 13.
-(define (zip-matrix xss yss) void)
+(define (diag xss)
+  (define (helper tmp row)
+    (if (= row (length xss))
+        '()
+        (cons (list-ref (car tmp) row) (helper (cdr tmp) (+ row 1)))))
+  (helper xss 0))
+
+(define (diags xss)
+  (define len (length xss))
+  (define (helper tmp row)
+    (if (= row len)
+        '()
+        (cons (list-ref (car tmp) (- len row 1))
+              (helper (cdr tmp) (+ row 1)))))
+  (cons (diag xss) (list (helper xss 0))))
+
+(define (filter-matrix p? xss)
+  (if (null? xss)
+      '()
+      (cons (filter p? (car xss))
+            (filter-matrix p? (cdr xss)))))
+
+(define (map-matrix f xss)
+  (if (null? xss)
+      '()
+      (cons (map f (car xss)) (map-matrix f (cdr xss)))))
+
+(define (zip-with f xs ys)
+  (if (or (null? xs) (null? ys))
+      '()
+      (cons (f (car xs) (car ys))
+            (zip-with f (cdr xs) (cdr ys)))))
+
+(define (zip-matrix xss yss)
+  (define (helper tmpx tmpy rows)
+    (if (= rows (length xss))
+        '()
+        (cons (zip-with cons (car tmpx) (car tmpy))
+              (helper (cdr tmpx) (cdr tmpy) (+ rows 1)))))
+  (helper xss yss 0))
